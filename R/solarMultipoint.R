@@ -8,6 +8,12 @@
 #' parse output files and 
 #' store results in an object of \code{solarMultipoint} class (see \code{\link{solarMultipointClass}}).
 #'
+#' @note
+#'  The user is responsible for computation of the MIBD matrices 
+#'  required by \code{solarMultipoint} function via \code{mibddir} argument.
+#'  Estimation of the IBD matrices is out of the scope of \code{solarius} package.
+#'  More information is available in \url{http://solar.txbiomedgenetics.org/doc/05.chapter.html}.
+#' 
 #'@param formula
 #'  an object of class \code{formula} or one that can be coerced to that class.
 #'  It is a symbolic description of fixed effects (covariates) to be fitted. 
@@ -327,7 +333,9 @@ run_multipoint <- function(out, dir)
   }))
   
   # -- try to union `lodf`
-  num.passes <- results.list[[1]]$num.passes
+  num.passes <- try({
+    results.list[[1]]$num.passes
+  })
   
   lodf <- results.list 
   ret <- try({

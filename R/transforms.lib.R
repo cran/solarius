@@ -84,6 +84,9 @@ transformData <- function(transforms, data, transform.prefix = "tr_", ...)
 #' @param transform
 #'    a character vector, the name of transformation.
 #'    Possible values are returned by \code{\link{availableTransforms}} function.
+#' @param mult
+#'    A numeric, the multiplicator for the transformed value of a trait.
+#'    The default value is \code{1}.
 #' @param ...
 #'    additional parameters passed to internal \code{transform_trait_*} functions.
 #'    Possible parameters might be \code{log.base}, \code{log.intercept} (\code{"log"} transformation).
@@ -104,7 +107,7 @@ transformData <- function(transforms, data, transform.prefix = "tr_", ...)
 #' @seealso \code{\link{availableTransforms}}, \code{\link{transformData}}
 #'
 #' @export
-transformTrait <- function(x, transform, ...)
+transformTrait <- function(x, transform, mult = 1, ...)
 {
   ### arg
   stopifnot(!missing(x))
@@ -124,23 +127,44 @@ transformTrait <- function(x, transform, ...)
     stop("error in switch (unknown transform)"))
 
   xt <- res$x
-
+  
+  # mult
+  xt <- mult * xt
+  
   return(xt)
 }
 
-transform_trait_log <- function(x, log.base, log.intercept)
+transform_trait_log <- function(x, log.base, log.intercept, log.xintercept)
 {
   stopifnot(!missing(x))
-
-  # process `log.intercept`
-  if(missing(log.intercept)) {
+  
+  ### case 1
+  if(missing(log.intercept) & missing(log.xintercept)) {
     x.min <- min(x, na.rm = TRUE)
     if(x.min <= 0) {
       x.min <- min(x, na.rm = TRUE)
       x <- x - x.min + 0.1
     }
-  } else {
+  } 
+  
+  ### case 2
+  if(!missing(log.intercept)) {
     x <- x - log.intercept
+
+    x.min <- min(x, na.rm = TRUE)
+    stopifnot(x.min > 0)
+  }
+  
+  ### case 3
+  if(!missing(log.xintercept)) {
+    x.min <- min(x, na.rm = TRUE)
+    stopifnot(log.intercept > x.min)
+    
+    # y = kx + b
+    k <- 0.9 / (log.intercept - x.min)
+    b <- 1 - 0.9 * log.intercept / (log.intercept - x.min)
+    
+    x <- k * x + b
 
     x.min <- min(x, na.rm = TRUE)
     stopifnot(x.min > 0)
